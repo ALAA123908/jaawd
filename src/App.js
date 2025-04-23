@@ -131,7 +131,8 @@ export default function App() {
           item.id === product.id ? { ...item, qty: item.qty + 1 } : item
         );
       }
-      return [...prev, { ...product, qty: 1 }];
+      // تأكد أن خاصية image موجودة
+      return [...prev, { ...product, qty: 1, image: product.image || '' }];
     });
   };
 
