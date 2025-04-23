@@ -539,6 +539,7 @@ try {
           <button className="back-btn" onClick={() => setShowCart(false)}>
             ← العودة للمنتجات
           </button>
+        </div> {/* إغلاق div.main-content الخاص بسلة التسوق */}
         </main>
       )}
       <footer className="footer">جميع الحقوق محفوظة © jawad shop 2025</footer>
