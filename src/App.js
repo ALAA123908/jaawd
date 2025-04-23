@@ -15,6 +15,10 @@ const initialProducts = [
 ];
 
 export default function App() {
+  // إشعار عائم للردود
+  const [toastMsg, setToastMsg] = useState(null);
+  const [toastVisible, setToastVisible] = useState(false);
+
   const [cart, setCart] = useState([]);
   const [showCart, setShowCart] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -83,6 +87,15 @@ export default function App() {
     const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
       const orderList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setOrders(orderList);
+      // إشعار للزبون عند وصول رد جديد
+      const userOrders = orderList.filter(o => o.adminReply && !o._toastShown);
+      if (userOrders.length > 0) {
+        // أظهر أول رد جديد فقط (يمكنك تعديلها لتظهر الكل)
+        setToastMsg(userOrders[0].adminReply);
+        setToastVisible(true);
+        setTimeout(() => setToastVisible(false), 3500);
+        // ضع علامة أن الرد تم إظهاره (اختياري، يحتاج تحديث في قاعدة البيانات)
+      }
     });
     return () => unsubscribe();
   }, []);
@@ -143,6 +156,27 @@ export default function App() {
 
   return (
     <div className="app-container">
+      {/* إشعار عائم أعلى الصفحة */}
+      {toastVisible && toastMsg && (
+        <div style={{
+          position: 'fixed',
+          top: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#0ea5eedd',
+          color: '#fff',
+          padding: '14px 28px',
+          borderRadius: '14px',
+          fontSize: '1.18em',
+          fontWeight: 600,
+          boxShadow: '0 6px 24px #0003',
+          zIndex: 9999,
+          transition: 'opacity 0.4s',
+          opacity: toastVisible ? 1 : 0
+        }}>
+          {toastMsg}
+        </div>
+      )}
       <header className="header">
         <h1>مرحبًا بك في jawad shop</h1>
         <div className="header-nav">
