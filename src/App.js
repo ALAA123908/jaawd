@@ -166,7 +166,7 @@ export default function App() {
           </button>
         </div>
       </header>
-      {!panelAuth && panelPassword ? (
+      {showAdmin && panelPassword && !panelAuth ? (
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'70vh'}}>
           <form onSubmit={e => {
             e.preventDefault();
