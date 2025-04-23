@@ -11,18 +11,21 @@ export default function AdminPanel({ products }) {
   const [price, setPrice] = useState('');
   const [image, setImage] = useState(null);
   const [msg, setMsg] = useState('');
+  const [available, setAvailable] = useState(true);
 
   // States for editing
   const [editId, setEditId] = useState(null);
   const [editName, setEditName] = useState('');
   const [editPrice, setEditPrice] = useState('');
   const [editImage, setEditImage] = useState(null);
+  const [editAvailable, setEditAvailable] = useState(true);
 
   const startEdit = (product) => {
     setEditId(product.id);
     setEditName(product.name);
     setEditPrice(product.price);
     setEditImage(product.image || null);
+    setEditAvailable(product.available !== false);
   };
 
   const handleEditSave = async (e, id) => {
@@ -31,12 +34,14 @@ export default function AdminPanel({ products }) {
     await updateDoc(prodRef, {
       name: editName,
       price: parseFloat(editPrice),
-      image: editImage || ''
+      image: editImage || '',
+      available: editAvailable
     });
     setEditId(null);
     setEditName('');
     setEditPrice('');
     setEditImage(null);
+    setEditAvailable(true);
     setMsg('تم تعديل المنتج بنجاح!');
     setTimeout(() => setMsg(''), 1500);
   };
@@ -46,6 +51,7 @@ export default function AdminPanel({ products }) {
     setEditName('');
     setEditPrice('');
     setEditImage(null);
+    setEditAvailable(true);
   };
 
 
@@ -58,11 +64,13 @@ export default function AdminPanel({ products }) {
     await addDoc(collection(db, 'products'), {
       name,
       price: parseFloat(price),
-      image: image || ''
+      image: image || '',
+      available
     });
     setName('');
     setPrice('');
     setImage(null);
+    setAvailable(true);
     setMsg('تمت إضافة المنتج بنجاح!');
     setTimeout(() => setMsg(''), 1500);
   };
@@ -77,6 +85,14 @@ export default function AdminPanel({ products }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+        <label style={{display:'flex',alignItems:'center',gap:'6px',margin:'8px 0'}}>
+          <input
+            type="checkbox"
+            checked={available}
+            onChange={(e) => setAvailable(e.target.checked)}
+          />
+          متوفر
+        </label>
         <input
           type="number"
           placeholder="السعر"
@@ -112,6 +128,14 @@ export default function AdminPanel({ products }) {
                   onChange={(e) => setEditName(e.target.value)}
                   required
                 />
+                <label style={{display:'flex',alignItems:'center',gap:'6px',margin:'8px 0'}}>
+                  <input
+                    type="checkbox"
+                    checked={editAvailable}
+                    onChange={(e) => setEditAvailable(e.target.checked)}
+                  />
+                  متوفر
+                </label>
                 <input
                   type="number"
                   value={editPrice}

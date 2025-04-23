@@ -460,9 +460,18 @@ export default function App() {
                     </div>
                     <div className="product-title">{product.name}</div>
                     <div className="product-price">{product.price} ريال</div>
-                    <button className="add-btn" onClick={() => addToCart(product)}>
-                      إضافة للسلة
-                    </button>
+                    {product.available !== false ? (
+                      <button className="add-btn" onClick={() => addToCart(product)}>
+                        إضافة للسلة
+                      </button>
+                    ) : (
+                      <button className="add-btn" disabled style={{background:'#aaa',cursor:'not-allowed'}}>
+                        غير متوفر
+                      </button>
+                    )}
+                    <div style={{marginTop:'4px',fontSize:'0.95em',color:product.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
+                      {product.available !== false ? 'متوفر' : 'غير متوفر'}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -488,6 +497,9 @@ export default function App() {
                     </div>
                     <div className="cart-details">
                       <div className="cart-title">{item.name}</div>
+                      <div style={{fontSize:'0.95em',color:item.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
+                        {item.available !== false ? 'متوفر' : 'غير متوفر'}
+                      </div>
                       <div className="cart-price">{item.price} ريال / للواحدة</div>
                       <div className="cart-qty-controls">
                         <button onClick={() => decreaseQty(item.id)}>-</button>
