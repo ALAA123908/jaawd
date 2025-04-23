@@ -208,7 +208,8 @@ try {
 )}
 
       {showAdmin && panelPassword && !panelAuth ? (
-        <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'70vh'}}>
+  <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'70vh'}}>
+    <button className="back-btn" onClick={() => { setShowAdmin(false); setShowCart(false); }} style={{position:'absolute',top:'24px',left:'24px',background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'9px 24px',fontWeight:'bold',cursor:'pointer',zIndex:1001}}>← العودة للصفحة الرئيسية</button>
           <form onSubmit={e => {
             e.preventDefault();
             if (panelPasswordInput === panelPassword) {
@@ -225,7 +226,8 @@ try {
           </form>
         </div>
       ) : showAdmin ? (
-         <main>
+  <main>
+    <button className="back-btn" onClick={() => { setShowAdmin(false); setShowCart(false); }} style={{margin:'16px 0',background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'9px 24px',fontWeight:'bold',cursor:'pointer'}}>← العودة للصفحة الرئيسية</button>
           <div style={{marginBottom:'18px', display:'flex', gap:'10px'}}>
             <button className={"cart-btn" + (adminSection==='products' ? ' active' : '')} onClick={() => {
               if (sectionPasswords['products'] && !sectionAuth['products']) {
@@ -453,18 +455,42 @@ try {
             <CategoryFilter categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
             {/* قائمة المنتجات */}
             <ProductList products={filteredProducts} addToCart={addToCart} />
-          </div>
-        </main>
       ) : (
         <main>
           <Header cartCount={cart.reduce((sum, item) => sum + item.qty, 0)} onCartClick={() => setShowCart(true)} onAdminClick={() => setShowAdmin(true)} />
-          <div className="main-content" style={{maxWidth:900,margin:'0 auto',padding:'0 12px'}}>
-            <h2>سلة التسوق</h2>
-            {cart.length === 0 ? (
-              <p>السلة فارغة.</p>
-            ) : (
-              <React.Fragment>
-                <div className="cart-cards">
+          {showCart && (
+            <div className="main-content cart-content">
+              <button className="back-btn" onClick={() => setShowCart(false)} style={{margin:'16px 0',background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'9px 24px',fontWeight:'bold',cursor:'pointer'}}>← العودة للمنتجات</button>
+              <div style={{maxWidth:900,margin:'0 auto',padding:'0 12px'}}>
+                <h2>سلة التسوق</h2>
+                {cart.length === 0 ? (
+                  <p>السلة فارغة.</p>
+                ) : (
+                  <React.Fragment>
+                    <div className="cart-cards">
+                      {cart.map((item) => (
+                        <div className="cart-card" key={item.id}>
+                          <div className="cart-thumb">
+                            {item.image ? (
+                              <img src={item.image} alt={item.name} className="cart-img" />
+                            ) : (
+                              <span role="img" aria-label="product">🛍️</span>
+                            )}
+                          </div>
+                          <div className="cart-details">
+                            <div className="cart-title">{item.name}</div>
+                            <div style={{fontSize:'0.95em',color:item.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
+                              {item.available !== false ? 'متوفر' : 'غير متوفر'}
+                            </div>
+                            <div className="cart-price">{item.price} $ / للواحدة</div>
+                            <div className="cart-qty-controls">
+                              <button onClick={() => decreaseQty(item.id)}>-</button>
+                              <span>{item.qty}</span>
+                              <button onClick={() => addToCart(item)}>+</button>
+                            </div>
+                            <div className="cart-subtotal">المجموع: {item.price * item.qty} $</div>
+                          </div>
+                          <button className="cart-remove-btn" onClick={() => removeFromCart(item.id)}>حذف</button>
                   {cart.map((item) => (
                     <div className="cart-card" key={item.id}>
                       <div className="cart-thumb">
@@ -503,7 +529,8 @@ try {
               </React.Fragment>
             )}
           {showOrderForm && (
-            <div className="order-form-modal">
+  <div className="order-form-modal">
+    <button className="back-btn" onClick={() => { setShowOrderForm(false); setShowCart(false); setShowAdmin(false); }} style={{margin:'16px 0',background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'9px 24px',fontWeight:'bold',cursor:'pointer'}}>← العودة للصفحة الرئيسية</button>
               <form className="order-form" onSubmit={async (e) => {
                 e.preventDefault();
                 setOrderMsg('تم استلام طلبك بنجاح! سيتم التواصل معك قريبًا.');
