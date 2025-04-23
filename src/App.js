@@ -4,6 +4,7 @@ import CategoryFilter from './components/CategoryFilter';
 import ProductList from './components/ProductList';
 import Loader from './components/Loader';
 import Toast from './components/Toast';
+import Header from './components/Header';
 import AdminPanel from './AdminPanel';
 import ErrorBoundary from './ErrorBoundary';
 import { db } from './firebase';
@@ -178,50 +179,34 @@ try {
 
   return (
     <div className="app-container">
-      {/* إشعار عائم أعلى الصفحة */}
-      {toastVisible && toastMsg && (
-        <div style={{
-          position: 'fixed',
-          top: 20,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: '#0ea5eedd',
-          color: '#fff',
-          padding: '14px 28px',
-          borderRadius: '14px',
-          fontSize: '1.18em',
-          fontWeight: 600,
-          boxShadow: '0 6px 24px #0003',
-          zIndex: 9999,
-          transition: 'opacity 0.4s',
-          opacity: toastVisible ? 1 : 0
-        }}>
-          {toastMsg}
-        </div>
+      <Header cartCount={cart.reduce((sum, item) => sum + item.qty, 0)} onCartClick={() => { setShowCart(true); setShowAdmin(false); }} onAdminClick={() => { setShowAdmin(true); setShowCart(false); }} />
+      <Toast type={toast.type} message={toast.message} onClose={() => setToast({ ...toast, message: '' })} />
+
+      {!showCart && !showAdmin && (
+        <main className="main-content" style={{maxWidth:900,margin:'0 auto',padding:'0 12px'}}>
+          <h1 style={{margin:'18px 0 18px',fontSize:'2em',color:'#0ea5e9',fontWeight:'bold',textAlign:'center',letterSpacing:'1px'}}>جميع المنتجات</h1>
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="ابحث عن منتج..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              style={{padding:'10px',borderRadius:'8px',border:'1px solid #e0e7ef',width:'70%',maxWidth:'350px',fontSize:'1.05em'}}
+            />
+            <button
+              onClick={() => setSearchTerm('')}
+              style={{padding:'10px 16px',borderRadius:'8px',border:'none',background:'#ef4444',color:'#fff',fontWeight:'bold',cursor:'pointer',fontSize:'1rem',boxShadow:'0 1px 3px #eee',marginRight:'10px'}}
+            >مسح</button>
+          </div>
+          <CategoryFilter categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
+          {loading ? (
+            <Loader text="جاري تحميل البيانات..." />
+          ) : (
+            <ProductList products={filteredProducts} addToCart={addToCart} />
+          )}
+        </main>
       )}
-      <header className="header">
-        <h1>مرحبًا بك في jawad shop</h1>
-        <div className="header-nav">
-          <button
-            className={"cart-btn" + (!showCart && !showAdmin ? " active" : "")}
-            onClick={() => { setShowCart(false); setShowAdmin(false); }}
-          >
-            🏠 المنتجات
-          </button>
-          <button
-            className={"cart-btn" + (showCart ? " active" : "")}
-            onClick={() => { setShowCart(true); setShowAdmin(false); }}
-          >
-            🛒 السلة ({cart.length})
-          </button>
-          <button
-            className={"cart-btn" + (showAdmin ? " active" : "")}
-            onClick={() => { setShowAdmin(true); setShowCart(false); }}
-          >
-            ⚙️ لوحة التحكم
-          </button>
-        </div>
-      </header>
+
       {showAdmin && panelPassword && !panelAuth ? (
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'70vh'}}>
           <form onSubmit={e => {
@@ -472,21 +457,22 @@ try {
         </main>
       ) : (
         <main>
-          <h2>سلة التسوق</h2>
-          {cart.length === 0 ? (
-            <p>السلة فارغة.</p>
-          ) : (
-            <>
-              <div className="cart-cards">
-                {cart.map((item) => (
-                  <div className="cart-card" key={item.id}>
-                    <div className="cart-thumb">
-                      {item.image ? (
-                        <img src={item.image} alt={item.name} className="cart-img" />
-                      ) : (
-                        <span role="img" aria-label="product">🛍️</span>
-                      )}
-                    </div>
+          <Header cartCount={cart.reduce((sum, item) => sum + item.qty, 0)} onCartClick={() => setShowCart(true)} onAdminClick={() => setShowAdmin(true)} />
+          <div className="main-content" style={{maxWidth:900,margin:'0 auto',padding:'0 12px'}}>
+            <h2>سلة التسوق</h2>
+            {cart.length === 0 ? (
+              <p>السلة فارغة.</p>
+            ) : (
+              <>
+                <div className="cart-cards">
+                  {cart.map((item) => (
+                    <div className="cart-card" key={item.id}>
+                      <div className="cart-thumb">
+                        {item.image ? (
+                          <img src={item.image} alt={item.name} className="cart-img" />
+                        ) : (
+                          <span role="img" aria-label="product">🛍️</span>
+                        )}
                     <div className="cart-details">
                       <div className="cart-title">{item.name}</div>
                       <div style={{fontSize:'0.95em',color:item.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
