@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import CategoryFilter from './components/CategoryFilter';
+import ProductList from './components/ProductList';
 import AdminPanel from './AdminPanel';
 import ErrorBoundary from './ErrorBoundary';
 import { db } from './firebase';
@@ -454,45 +456,9 @@ try {
               >مسح</button>
             </div>
             {/* تصفية الأقسام */}
-            <div style={{display:'flex',gap:'12px',marginBottom:'18px',flexWrap:'wrap'}}>
-              <button onClick={() => setSelectedCategory('')} style={{padding:'8px 16px',borderRadius:'8px',border:'none',background:!selectedCategory?'#0ea5e9':'#e0e7ef',color:!selectedCategory?'#fff':'#0ea5e9',fontWeight:'bold',cursor:'pointer'}}>كل الأقسام</button>
-              {categories.map(cat => (
-                <button key={cat.id} onClick={() => setSelectedCategory(cat.name)} style={{padding:'8px 16px',borderRadius:'8px',border:'none',background:selectedCategory===cat.name?'#0ea5e9':'#e0e7ef',color:selectedCategory===cat.name?'#fff':'#0ea5e9',fontWeight:'bold',cursor:'pointer'}}>{cat.name}</button>
-              ))}
-            </div>
-            {filteredProducts.length === 0 ? (
-              <div style={{textAlign:'center',margin:'30px 0',color:'#888',fontSize:'1.2em',background:'#fff',padding:'18px',borderRadius:'12px',boxShadow:'0 1px 4px #eee'}}>
-                لم يتم العثور على منتجات مطابقة لبحثك.
-              </div>
-            ) : (
-              <div className="products-list">
-                {filteredProducts.map(product => (
-                  <div className="product-card" key={product.id}>
-                    <div className="product-thumb">
-                      {product.image ? (
-                        <img src={product.image} alt={product.name} className="product-img" />
-                      ) : (
-                        <span role="img" aria-label="product">🛍️</span>
-                      )}
-                    </div>
-                    <div className="product-title">{product.name}</div>
-                    <div className="product-price">{product.price} $</div>
-                    {product.available !== false ? (
-                      <button className="add-btn" onClick={() => addToCart(product)}>
-                        إضافة للسلة
-                      </button>
-                    ) : (
-                      <button className="add-btn" disabled style={{background:'#aaa',cursor:'not-allowed'}}>
-                        غير متوفر
-                      </button>
-                    )}
-                    <div style={{marginTop:'4px',fontSize:'0.95em',color:product.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
-                      {product.available !== false ? 'متوفر' : 'غير متوفر'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <CategoryFilter categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
+            {/* قائمة المنتجات */}
+            <ProductList products={filteredProducts} addToCart={addToCart} />
           </div>
         </main>
       ) : (
