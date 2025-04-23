@@ -463,7 +463,7 @@ try {
             {cart.length === 0 ? (
               <p>السلة فارغة.</p>
             ) : (
-              <>
+              <React.Fragment>
                 <div className="cart-cards">
                   {cart.map((item) => (
                     <div className="cart-card" key={item.id}>
@@ -473,34 +473,35 @@ try {
                         ) : (
                           <span role="img" aria-label="product">🛍️</span>
                         )}
-                    <div className="cart-details">
-                      <div className="cart-title">{item.name}</div>
-                      <div style={{fontSize:'0.95em',color:item.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
-                        {item.available !== false ? 'متوفر' : 'غير متوفر'}
                       </div>
-                      <div className="cart-price">{item.price} $ / للواحدة</div>
-                      <div className="cart-qty-controls">
-                        <button onClick={() => decreaseQty(item.id)}>-</button>
-                        <span>{item.qty}</span>
-                        <button onClick={() => addToCart(item)}>+</button>
+                      <div className="cart-details">
+                        <div className="cart-title">{item.name}</div>
+                        <div style={{fontSize:'0.95em',color:item.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
+                          {item.available !== false ? 'متوفر' : 'غير متوفر'}
+                        </div>
+                        <div className="cart-price">{item.price} $ / للواحدة</div>
+                        <div className="cart-qty-controls">
+                          <button onClick={() => decreaseQty(item.id)}>-</button>
+                          <span>{item.qty}</span>
+                          <button onClick={() => addToCart(item)}>+</button>
+                        </div>
+                        <div className="cart-subtotal">المجموع: {item.price * item.qty} $</div>
                       </div>
-                      <div className="cart-subtotal">المجموع: {item.price * item.qty} $</div>
+                      <button className="cart-remove-btn" onClick={() => removeFromCart(item.id)}>حذف</button>
                     </div>
-                    <button className="cart-remove-btn" onClick={() => removeFromCart(item.id)}>حذف</button>
-                  </div>
-                ))}
-              </div>
-              <div className="total">الإجمالي: {total} $</div>
-              <button className="cart-clear-btn" onClick={clearCart}>إفراغ السلة</button>
-              <button className="order-btn" onClick={() => setShowOrderForm(true)}>إتمام الطلب</button>
-              {/* إشعار رد الإدارة على الطلب الأخير للزبون */}
-              {orders.length > 0 && orders.filter(o => o.phone === orderPhone || o.name === orderName).slice(-1)[0]?.adminReply && (
-                <div className="order-msg" style={{background:'#f0fdf4',color:'#15803d',border:'1.5px solid #bbf7d0',marginTop:'22px'}}>
-                  <b>رد الإدارة:</b> {orders.filter(o => o.phone === orderPhone || o.name === orderName).slice(-1)[0].adminReply}
+                  ))}
                 </div>
-              )}
-            </>
-          )}
+                <div className="total">الإجمالي: {total} $</div>
+                <button className="cart-clear-btn" onClick={clearCart}>إفراغ السلة</button>
+                <button className="order-btn" onClick={() => setShowOrderForm(true)}>إتمام الطلب</button>
+                {/* إشعار رد الإدارة على الطلب الأخير للزبون */}
+                {orders.length > 0 && orders.filter(o => o.phone === orderPhone || o.name === orderName).slice(-1)[0]?.adminReply && (
+                  <div className="order-msg" style={{background:'#f0fdf4',color:'#15803d',border:'1.5px solid #bbf7d0',marginTop:'22px'}}>
+                    <b>رد الإدارة:</b> {orders.filter(o => o.phone === orderPhone || o.name === orderName).slice(-1)[0].adminReply}
+                  </div>
+                )}
+              </React.Fragment>
+            )}
 
           {showOrderForm && (
             <div className="order-form-modal">
