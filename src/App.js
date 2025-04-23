@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import AdminPanel from './AdminPanel';
+import ErrorBoundary from './ErrorBoundary';
 import { db } from './firebase';
 import {
-  collection, onSnapshot, addDoc, updateDoc, doc, setDoc
+  collection, onSnapshot, addDoc, updateDoc, doc, setDoc, deleteDoc
 } from 'firebase/firestore';
 
 const initialProducts = [
@@ -17,17 +18,62 @@ export default function App() {
   const [cart, setCart] = useState([]);
   const [showCart, setShowCart] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
-  // المنتجات
-  const [products, setProducts] = useState([]);
-  // الطلبات
+  const [products, setProducts] = useState([]); // تعريف المنتجات أولاً
   const [orders, setOrders] = useState([]);
-  const [adminSection, setAdminSection] = useState('products'); // 'products' or 'orders'
+  const [adminSection, setAdminSection] = useState('products');
+  // كلمات السر للأقسام
+  const [sectionPasswords, setSectionPasswords] = useState({});
+  const [passwordInputs, setPasswordInputs] = useState({});
+  const [passwordEdit, setPasswordEdit] = useState({});
+  const [passwordMsg, setPasswordMsg] = useState('');
+  // حماية الأقسام بكلمة سر
+  const [sectionAuth, setSectionAuth] = useState({});
+  const [showPwdModal, setShowPwdModal] = useState(null); // اسم القسم المطلوب كلمة سره
+  const [pwdModalInput, setPwdModalInput] = useState('');
+  const [pwdModalError, setPwdModalError] = useState('');
+  // حماية لوحة التحكم بالكامل
+  const [panelPassword, setPanelPassword] = useState('');
+  const [panelPasswordInput, setPanelPasswordInput] = useState('');
+  const [panelAuth, setPanelAuth] = useState(false);
+  const [showPanelPwdModal, setShowPanelPwdModal] = useState(false);
+  const [panelPwdError, setPanelPwdError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // الآن يمكن تصفية المنتجات بأمان
+  let filteredProducts = [];
+  try {
+    filteredProducts = products.filter(p => {
+      const search = searchTerm.toLowerCase();
+      return (
+        p.name.toLowerCase().includes(search) ||
+        (p.price && p.price.toString().includes(search)) ||
+        (p.description && p.description.toLowerCase().includes(search))
+      );
+    });
+  } catch (e) {
+    console.error('خطأ أثناء تصفية المنتجات:', e, products);
+    filteredProducts = [];
+  }
 
   // جلب المنتجات من Firestore بشكل لحظي (الكود المقترح)
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
       const productList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      console.log('Firestore products:', productList);
       setProducts(productList);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // جلب كلمات سر الأقسام من Firestore
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "sectionPasswords"), (snapshot) => {
+      const pwds = {};
+      snapshot.forEach(doc => {
+        pwds[doc.id] = doc.data().password;
+      });
+      setSectionPasswords(pwds);
+      setPanelPassword(pwds['panel'] || '');
     });
     return () => unsubscribe();
   }, []);
@@ -47,7 +93,7 @@ export default function App() {
     e.preventDefault();
     if (!replyInputs[orderId] || !replyInputs[orderId].trim()) return;
     const orderRef = doc(db, 'orders', orderId);
-    await updateDoc(orderRef, { reply: replyInputs[orderId] });
+    await updateDoc(orderRef, { adminReply: replyInputs[orderId] });
     setReplyInputs(inputs => ({ ...inputs, [orderId]: '' }));
   };
 
@@ -120,13 +166,143 @@ export default function App() {
           </button>
         </div>
       </header>
-      {showAdmin ? (
-        <main>
+      {!panelAuth && panelPassword ? (
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'70vh'}}>
+          <form onSubmit={e => {
+            e.preventDefault();
+            if (panelPasswordInput === panelPassword) {
+              setPanelAuth(true);
+              setPanelPwdError('');
+            } else {
+              setPanelPwdError('كلمة السر غير صحيحة!');
+            }
+          }} style={{background:'#fff',padding:'36px 30px',borderRadius:'16px',minWidth:'320px',boxShadow:'0 8px 32px #0002',display:'flex',flexDirection:'column',gap:'18px',alignItems:'center'}}>
+            <h3 style={{margin:0}}>أدخل كلمة سر لوحة التحكم</h3>
+            <input type="password" autoFocus value={panelPasswordInput} onChange={e=>setPanelPasswordInput(e.target.value)} style={{padding:'9px',borderRadius:'8px',border:'1.5px solid #bbb',width:'100%'}} />
+            {panelPwdError && <div style={{color:'#ef4444',fontWeight:'bold'}}>{panelPwdError}</div>}
+            <button type="submit" style={{background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'8px 24px',fontWeight:'bold',cursor:'pointer'}}>دخول</button>
+          </form>
+        </div>
+      ) : showAdmin ? (
+         <main>
           <div style={{marginBottom:'18px', display:'flex', gap:'10px'}}>
-            <button className={"cart-btn" + (adminSection==='products' ? ' active' : '')} onClick={()=>setAdminSection('products')}>المنتجات</button>
-            <button className={"cart-btn" + (adminSection==='orders' ? ' active' : '')} onClick={()=>setAdminSection('orders')}>الطلبات</button>
+            <button className={"cart-btn" + (adminSection==='products' ? ' active' : '')} onClick={() => {
+              if (sectionPasswords['products'] && !sectionAuth['products']) {
+                setShowPwdModal('products');
+              } else {
+                setAdminSection('products');
+              }
+            }}>المنتجات</button>
+            <button className={"cart-btn" + (adminSection==='orders' ? ' active' : '')} onClick={() => {
+              if (sectionPasswords['orders'] && !sectionAuth['orders']) {
+                setShowPwdModal('orders');
+              } else {
+                setAdminSection('orders');
+              }
+            }}>الطلبات</button>
+            <button className={"cart-btn" + (adminSection==='security' ? ' active' : '')} onClick={() => {
+              if (sectionPasswords['security'] && !sectionAuth['security']) {
+                setShowPwdModal('security');
+              } else {
+                setAdminSection('security');
+              }
+            }}>الأمان</button>
           </div>
-          {adminSection === 'products' ? (
+
+          {/* نافذة تحقق كلمة السر */}
+          {showPwdModal && (
+            <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#0007',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <form onSubmit={e => {
+                e.preventDefault();
+                if (pwdModalInput === sectionPasswords[showPwdModal]) {
+                  setSectionAuth(auth => ({...auth, [showPwdModal]: true}));
+                  setShowPwdModal(null);
+                  setPwdModalInput('');
+                  setPwdModalError('');
+                  setAdminSection(showPwdModal);
+                } else {
+                  setPwdModalError('كلمة السر غير صحيحة!');
+                }
+              }} style={{background:'#fff',padding:'36px 30px',borderRadius:'16px',minWidth:'320px',boxShadow:'0 8px 32px #0002',display:'flex',flexDirection:'column',gap:'18px',alignItems:'center'}}>
+                <h3 style={{margin:0}}>أدخل كلمة سر قسم {showPwdModal==='products'?'المنتجات':showPwdModal==='orders'?'الطلبات':'الأمان'}</h3>
+                <input type="password" autoFocus value={pwdModalInput} onChange={e=>setPwdModalInput(e.target.value)} style={{padding:'9px',borderRadius:'8px',border:'1.5px solid #bbb',width:'100%'}} />
+                {pwdModalError && <div style={{color:'#ef4444',fontWeight:'bold'}}>{pwdModalError}</div>}
+                <div style={{display:'flex',gap:'10px',width:'100%',justifyContent:'center'}}>
+                  <button type="submit" style={{background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'8px 24px',fontWeight:'bold',cursor:'pointer'}}>دخول</button>
+                  <button type="button" style={{background:'#64748b',color:'#fff',border:'none',borderRadius:'8px',padding:'8px 18px',fontWeight:'bold',cursor:'pointer'}} onClick={()=>{setShowPwdModal(null);setPwdModalInput('');setPwdModalError('');}}>إلغاء</button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {adminSection === 'security' ? (
+            <div className="orders-panel" style={{maxWidth:'420px',margin:'0 auto'}}>
+              <h2>إعدادات الأمان</h2>
+              <div style={{marginBottom:'18px',color:'#64748b'}}>يمكنك تعيين أو تغيير كلمة سر لكل قسم أو لوحة التحكم بالكامل. يمكنك أيضًا إزالة كلمة السر لأي قسم أو لوحة التحكم من هنا.</div>
+              {/* كلمة سر لوحة التحكم */}
+              <form style={{marginBottom:'22px',display:'flex',gap:'8px',alignItems:'center'}} onSubmit={async e => {
+                e.preventDefault();
+                if (!passwordInputs['panel'] || passwordInputs['panel'].length < 3) {
+                  setPasswordMsg('كلمة السر يجب أن تكون 3 أحرف أو أكثر');
+                  return;
+                }
+                await setDoc(doc(db, 'sectionPasswords', 'panel'), { password: passwordInputs['panel'] });
+                setPasswordMsg('تم حفظ كلمة سر لوحة التحكم بنجاح!');
+                setTimeout(()=>setPasswordMsg(''), 1500);
+                setPasswordInputs(inputs => ({...inputs, panel: ''}));
+              }}>
+                <label style={{minWidth:'80px',fontWeight:'bold'}}>لوحة التحكم:</label>
+                <input
+                  type={passwordEdit['panel'] ? 'text':'password'}
+                  placeholder={panelPassword ? '••••••' : 'أدخل كلمة سر جديدة'}
+                  value={passwordInputs['panel'] || ''}
+                  onChange={e => setPasswordInputs(inputs => ({...inputs, panel: e.target.value}))}
+                  style={{flex:1,padding:'7px',borderRadius:'6px',border:'1px solid #ddd'}}
+                />
+                <button type="button" style={{background:'#fbbf24',color:'#fff',border:'none',borderRadius:'8px',padding:'7px 12px',fontWeight:'bold',cursor:'pointer'}} onClick={()=>setPasswordEdit(edit => ({...edit, panel: !edit['panel']}))}>{passwordEdit['panel']?'إخفاء':'إظهار'}</button>
+                <button type="submit" style={{background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'7px 16px',fontWeight:'bold',cursor:'pointer'}}>حفظ</button>
+                {panelPassword && <button type="button" style={{background:'#ef4444',color:'#fff',border:'none',borderRadius:'8px',padding:'7px 14px',fontWeight:'bold',cursor:'pointer'}} onClick={async()=>{
+                  await deleteDoc(doc(db, 'sectionPasswords', 'panel'));
+                  setPanelPassword('');
+                  setPanelAuth(false);
+                  setPasswordMsg('تمت إزالة كلمة سر لوحة التحكم!');
+                  setTimeout(()=>setPasswordMsg(''), 1500);
+                }}>إزالة</button>}
+              </form>
+              {/* كلمات سر الأقسام */}
+              {['products','orders','security'].map(sec => (
+                <form key={sec} style={{marginBottom:'18px',display:'flex',gap:'8px',alignItems:'center'}} onSubmit={async e => {
+                  e.preventDefault();
+                  if (!passwordInputs[sec] || passwordInputs[sec].length < 3) {
+                    setPasswordMsg('كلمة السر يجب أن تكون 3 أحرف أو أكثر');
+                    return;
+                  }
+                  await setDoc(doc(db, 'sectionPasswords', sec), { password: passwordInputs[sec] });
+                  setPasswordMsg('تم حفظ كلمة السر للقسم بنجاح!');
+                  setTimeout(()=>setPasswordMsg(''), 1500);
+                  setPasswordInputs(inputs => ({...inputs, [sec]: ''}));
+                }}>
+                  <label style={{minWidth:'80px',fontWeight:'bold'}}>{sec==='products'?'المنتجات':sec==='orders'?'الطلبات':'الأمان'}:</label>
+                  <input
+                    type={passwordEdit[sec] ? 'text':'password'}
+                    placeholder={sectionPasswords[sec] ? '••••••' : 'أدخل كلمة سر جديدة'}
+                    value={passwordInputs[sec] || ''}
+                    onChange={e => setPasswordInputs(inputs => ({...inputs, [sec]: e.target.value}))}
+                    style={{flex:1,padding:'7px',borderRadius:'6px',border:'1px solid #ddd'}}
+                  />
+                  <button type="button" style={{background:'#fbbf24',color:'#fff',border:'none',borderRadius:'8px',padding:'7px 12px',fontWeight:'bold',cursor:'pointer'}} onClick={()=>setPasswordEdit(edit => ({...edit, [sec]: !edit[sec]}))}>{passwordEdit[sec]?'إخفاء':'إظهار'}</button>
+                  <button type="submit" style={{background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'7px 16px',fontWeight:'bold',cursor:'pointer'}}>حفظ</button>
+                  {sectionPasswords[sec] && <button type="button" style={{background:'#ef4444',color:'#fff',border:'none',borderRadius:'8px',padding:'7px 14px',fontWeight:'bold',cursor:'pointer'}} onClick={async()=>{
+                    await deleteDoc(doc(db, 'sectionPasswords', sec));
+                    setPasswordMsg('تمت إزالة كلمة سر القسم!');
+                    setTimeout(()=>setPasswordMsg(''), 1500);
+                    setSectionAuth(auth => ({...auth, [sec]: false}));
+                  }}>إزالة</button>}
+                </form>
+              ))}
+              {passwordMsg && <div style={{color:'#16a34a',marginTop:'10px',textAlign:'center'}}>{passwordMsg}</div>}
+            </div>
+          ) : adminSection === 'products' ? (
             <AdminPanel products={products} setProducts={setProducts} />
           ) : (
             <div className="orders-panel">
@@ -139,30 +315,32 @@ export default function App() {
                     <li key={order.id} className="order-card">
                       <div><b>الاسم:</b> {order.name}</div>
                       <div><b>العنوان:</b> {order.address}</div>
-                      <div><b>الجوال:</b> {order.phone}</div>
-                      <div><b>التاريخ:</b> {order.date}</div>
+                      <div><b>رقم الجوال:</b> {order.phone}</div>
+                      <div><b>الإجمالي:</b> {order.total} ريال</div>
+                      <div><b>تاريخ الطلب:</b> {order.date}</div>
                       <div><b>المنتجات:</b>
                         <ul>
-                          {order.items.map((item,i) => (
-                            <li key={i} style={{display:'flex',alignItems:'center',gap:'7px'}}>
-                              {item.image && <img src={item.image} alt={item.name} style={{width:'24px',height:'24px',borderRadius:'6px',objectFit:'cover',border:'1px solid #eee'}} />}
-                              {item.name} × {item.qty} ({item.price} ريال)
-                            </li>
+                          {order.items && order.items.map((item, idx) => (
+                            <li key={idx}>{item.name} × {item.qty} ({item.price} ر.س)</li>
                           ))}
                         </ul>
                       </div>
-                      <div><b>الإجمالي:</b> {order.total} ريال</div>
-                      <div className="order-reply-section">
-                        {order.reply ? (
-                          <div className="order-reply"><b>رد الإدارة:</b> {order.reply}</div>
-                        ) : (
-                          <form onSubmit={e => handleOrderReply(e, order.id)} style={{display:'flex',gap:'7px',marginTop:'6px'}}>
-                            <input type="text" value={replyInputs[order.id]||''} onChange={e => setReplyInputs(inputs => ({...inputs, [order.id]: e.target.value}))} placeholder="اكتب الرد هنا..." style={{flex:1,padding:'5px 8px',borderRadius:'6px',border:'1.2px solid #bbb'}} />
-                            <button type="submit" style={{background:'#2563eb',color:'#fff',border:'none',borderRadius:'6px',padding:'6px 12px',cursor:'pointer'}}>إرسال</button>
-                          </form>
-                        )}
-                      </div>
-                      <button onClick={() => handleDeleteOrder(order.id)} style={{background:'#ef4444',color:'#fff',border:'none',borderRadius:'6px',padding:'5px 14px',marginTop:'7px',cursor:'pointer'}}>حذف الطلب</button>
+                      <form style={{marginTop:'10px',display:'flex',gap:'8px'}} onSubmit={e => handleOrderReply(e, order.id)}>
+                        <input
+                          type="text"
+                          placeholder="رد للزبون..."
+                          value={replyInputs[order.id] || ''}
+                          onChange={e => setReplyInputs(inputs => ({ ...inputs, [order.id]: e.target.value }))}
+                          style={{flex:1,padding:'7px',borderRadius:'6px',border:'1px solid #ddd'}}
+                        />
+                        <button type="submit" style={{background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'7px 16px',fontWeight:'bold',cursor:'pointer'}}>إرسال</button>
+                        <button type="button" onClick={() => handleDeleteOrder(order.id)} style={{background:'#ef4444',color:'#fff',border:'none',borderRadius:'8px',padding:'7px 14px',fontWeight:'bold',cursor:'pointer'}}>حذف</button>
+                      </form>
+                      {order.adminReply && (
+                        <div style={{marginTop:'8px',background:'#f0fdf4',color:'#15803d',padding:'8px 12px',borderRadius:'8px',fontWeight:'bold',border:'1px solid #bbf7d0'}}>
+                          رد الإدارة: {order.adminReply}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -174,20 +352,83 @@ export default function App() {
         <main>
           <h2>منتجاتنا</h2>
           <div className="products-list">
-            {products.map((product) => (
-              <div className="product-card" key={product.id}>
-                {product.image && (
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="product-img"
-                  />
-                )}
-                <h3>{product.name}</h3>
-                <p>السعر: {product.price} ريال</p>
-                <button onClick={() => addToCart(product)}>أضف إلى السلة</button>
+            <div style={{
+              marginBottom: '24px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '10px',
+              background: '#f8fafc',
+              borderRadius: '12px',
+              padding: '16px 10px',
+              boxShadow: '0 2px 8px #eee',
+              maxWidth: 500,
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              position: 'relative'
+            }}>
+              <span style={{
+                position: 'absolute',
+                right: '38px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#888',
+                pointerEvents: 'none',
+                fontSize: '1.35em'
+              }}>🔍</span>
+              <input
+                type="text"
+                placeholder="ابحث بالاسم أو السعر أو الوصف..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{
+                  padding: '10px 36px 10px 16px',
+                  borderRadius: '8px',
+                  border: '1.5px solid #bbb',
+                  width: '70%',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  transition: 'border 0.2s',
+                  boxShadow: '0 1px 3px #eee',
+                  direction: 'rtl'
+                }}
+              />
+              <button
+                onClick={() => setSearchTerm('')}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#ef4444',
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  boxShadow: '0 1px 3px #eee'
+                }}
+              >مسح</button>
+            </div>
+            {filteredProducts.length === 0 ? (
+              <div style={{textAlign:'center',margin:'30px 0',color:'#888',fontSize:'1.2em',background:'#fff',padding:'18px',borderRadius:'12px',boxShadow:'0 1px 4px #eee'}}>
+                لم يتم العثور على منتجات مطابقة لبحثك.
               </div>
-            ))}
+            ) : (
+              filteredProducts.map((product) => (
+                <div className="product-card" key={product.id}>
+                  {product.image && (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="product-img"
+                    />
+                  )}
+                  <h3>{product.name}</h3>
+                  {product.description && <p style={{color:'#666',marginTop:'-8px',fontSize:'0.97em'}}>{product.description}</p>}
+                  <p>السعر: {product.price} ريال</p>
+                  <button onClick={() => addToCart(product)}>أضف إلى السلة</button>
+                </div>
+              ))
+            )}
           </div>
         </main>
       ) : (
@@ -224,6 +465,12 @@ export default function App() {
               <div className="total">الإجمالي: {total} ريال</div>
               <button className="cart-clear-btn" onClick={clearCart}>إفراغ السلة</button>
               <button className="order-btn" onClick={() => setShowOrderForm(true)}>إتمام الطلب</button>
+              {/* إشعار رد الإدارة على الطلب الأخير للزبون */}
+              {orders.length > 0 && orders.filter(o => o.phone === orderPhone || o.name === orderName).slice(-1)[0]?.adminReply && (
+                <div className="order-msg" style={{background:'#f0fdf4',color:'#15803d',border:'1.5px solid #bbf7d0',marginTop:'22px'}}>
+                  <b>رد الإدارة:</b> {orders.filter(o => o.phone === orderPhone || o.name === orderName).slice(-1)[0].adminReply}
+                </div>
+              )}
             </>
           )}
 
