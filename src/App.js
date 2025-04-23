@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import CategoryFilter from './components/CategoryFilter';
 import ProductList from './components/ProductList';
+import Loader from './components/Loader';
+import Toast from './components/Toast';
 import AdminPanel from './AdminPanel';
 import ErrorBoundary from './ErrorBoundary';
 import { db } from './firebase';
@@ -48,9 +50,16 @@ export default function App() {
   // الآن يمكن تصفية المنتجات بأمان
   const [categories, setCategories] = useState([]);
 const [selectedCategory, setSelectedCategory] = useState('');
+const [loading, setLoading] = useState(true);
+const [toast, setToast] = useState({ type: 'success', message: '' });
 useEffect(() => {
+  setLoading(true);
   const unsubscribe = onSnapshot(collection(db, 'categories'), (snapshot) => {
     setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    setLoading(false);
+  }, (error) => {
+    setToast({ type: 'error', message: 'خطأ في تحميل الأقسام' });
+    setLoading(false);
   });
   return () => unsubscribe();
 }, []);
