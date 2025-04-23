@@ -183,29 +183,29 @@ try {
       <Toast type={toast.type} message={toast.message} onClose={() => setToast({ ...toast, message: '' })} />
 
       {!showCart && !showAdmin && (
-        <main className="main-content" style={{maxWidth:900,margin:'0 auto',padding:'0 12px'}}>
-          <h1 style={{margin:'18px 0 18px',fontSize:'2em',color:'#0ea5e9',fontWeight:'bold',textAlign:'center',letterSpacing:'1px'}}>جميع المنتجات</h1>
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder="ابحث عن منتج..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              style={{padding:'10px',borderRadius:'8px',border:'1px solid #e0e7ef',width:'70%',maxWidth:'350px',fontSize:'1.05em'}}
-            />
-            <button
-              onClick={() => setSearchTerm('')}
-              style={{padding:'10px 16px',borderRadius:'8px',border:'none',background:'#ef4444',color:'#fff',fontWeight:'bold',cursor:'pointer',fontSize:'1rem',boxShadow:'0 1px 3px #eee',marginRight:'10px'}}
-            >مسح</button>
-          </div>
-          <CategoryFilter categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
-          {loading ? (
-            <Loader text="جاري تحميل البيانات..." />
-          ) : (
-            <ProductList products={filteredProducts} addToCart={addToCart} />
-          )}
-        </main>
-      )}
+  <main className="main-content" style={{maxWidth:900,margin:'0 auto',padding:'0 12px'}}>
+    <h1 style={{margin:'18px 0 18px',fontSize:'2em',color:'#0ea5e9',fontWeight:'bold',textAlign:'center',letterSpacing:'1px'}}>جميع المنتجات</h1>
+    <div className="search-bar">
+      <input
+        type="text"
+        placeholder="ابحث عن منتج..."
+        value={searchTerm}
+        onChange={e => setSearchTerm(e.target.value)}
+        style={{padding:'10px',borderRadius:'8px',border:'1px solid #e0e7ef',width:'70%',maxWidth:'350px',fontSize:'1.05em'}}
+      />
+      <button
+        onClick={() => setSearchTerm('')}
+        style={{padding:'10px 16px',borderRadius:'8px',border:'none',background:'#ef4444',color:'#fff',fontWeight:'bold',cursor:'pointer',fontSize:'1rem',boxShadow:'0 1px 3px #eee',marginRight:'10px'}}
+      >مسح</button>
+    </div>
+    <CategoryFilter categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
+    {loading ? (
+      <Loader text="جاري تحميل البيانات..." />
+    ) : (
+      <ProductList products={filteredProducts} addToCart={addToCart} />
+    )}
+  </main>
+)}
 
       {showAdmin && panelPassword && !panelAuth ? (
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'70vh'}}>
