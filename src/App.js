@@ -502,7 +502,6 @@ try {
                 )}
               </React.Fragment>
             )}
-
           {showOrderForm && (
             <div className="order-form-modal">
               <form className="order-form" onSubmit={async (e) => {
