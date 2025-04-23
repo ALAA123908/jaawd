@@ -413,21 +413,24 @@ export default function App() {
                 لم يتم العثور على منتجات مطابقة لبحثك.
               </div>
             ) : (
-              filteredProducts.map((product) => (
-                <div className="product-card" key={product.id}>
-                  {product.image && (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="product-img"
-                    />
-                  )}
-                  <h3>{product.name}</h3>
-                  {product.description && <p style={{color:'#666',marginTop:'-8px',fontSize:'0.97em'}}>{product.description}</p>}
-                  <p>السعر: {product.price} ريال</p>
-                  <button onClick={() => addToCart(product)}>أضف إلى السلة</button>
-                </div>
-              ))
+              <div className="products-list">
+                {filteredProducts.map(product => (
+                  <div className="product-card" key={product.id}>
+                    <div className="product-thumb">
+                      {product.image ? (
+                        <img src={product.image} alt={product.name} className="product-img" />
+                      ) : (
+                        <span role="img" aria-label="product">🛍️</span>
+                      )}
+                    </div>
+                    <div className="product-title">{product.name}</div>
+                    <div className="product-price">{product.price} ريال</div>
+                    <button className="add-btn" onClick={() => addToCart(product)}>
+                      إضافة للسلة
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </main>
