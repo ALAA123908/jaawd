@@ -351,7 +351,7 @@ export default function App() {
                       <div><b>الاسم:</b> {order.name}</div>
                       <div><b>العنوان:</b> {order.address}</div>
                       <div><b>رقم الجوال:</b> {order.phone}</div>
-                      <div><b>الإجمالي:</b> {order.total} ريال</div>
+                      <div><b>الإجمالي:</b> {order.total} $</div>
                       <div><b>تاريخ الطلب:</b> {order.date}</div>
                       <div><b>المنتجات:</b>
                         <ul>
@@ -459,7 +459,7 @@ export default function App() {
                       )}
                     </div>
                     <div className="product-title">{product.name}</div>
-                    <div className="product-price">{product.price} ريال</div>
+                    <div className="product-price">{product.price} $</div>
                     {product.available !== false ? (
                       <button className="add-btn" onClick={() => addToCart(product)}>
                         إضافة للسلة
@@ -500,19 +500,19 @@ export default function App() {
                       <div style={{fontSize:'0.95em',color:item.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
                         {item.available !== false ? 'متوفر' : 'غير متوفر'}
                       </div>
-                      <div className="cart-price">{item.price} ريال / للواحدة</div>
+                      <div className="cart-price">{item.price} $ / للواحدة</div>
                       <div className="cart-qty-controls">
                         <button onClick={() => decreaseQty(item.id)}>-</button>
                         <span>{item.qty}</span>
                         <button onClick={() => addToCart(item)}>+</button>
                       </div>
-                      <div className="cart-subtotal">المجموع: {item.price * item.qty} ريال</div>
+                      <div className="cart-subtotal">المجموع: {item.price * item.qty} $</div>
                     </div>
                     <button className="cart-remove-btn" onClick={() => removeFromCart(item.id)}>حذف</button>
                   </div>
                 ))}
               </div>
-              <div className="total">الإجمالي: {total} ريال</div>
+              <div className="total">الإجمالي: {total} $</div>
               <button className="cart-clear-btn" onClick={clearCart}>إفراغ السلة</button>
               <button className="order-btn" onClick={() => setShowOrderForm(true)}>إتمام الطلب</button>
               {/* إشعار رد الإدارة على الطلب الأخير للزبون */}
