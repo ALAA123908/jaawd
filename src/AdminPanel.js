@@ -1,9 +1,27 @@
 import React, { useState } from 'react';
 import './App.css';
 import { db } from './firebase';
-import { collection, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 export default function AdminPanel({ products }) {
+  // إدارة الأقسام
+  const [categories, setCategories] = React.useState([]);
+  const [newCategory, setNewCategory] = React.useState('');
+  React.useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'categories'), (snapshot) => {
+      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribe();
+  }, []);
+  const handleAddCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategory.trim()) return;
+    await addDoc(collection(db, 'categories'), { name: newCategory });
+    setNewCategory('');
+  };
+  const handleDeleteCategory = async (id) => {
+    await deleteDoc(doc(db, 'categories', id));
+  };
   const handleDelete = async (id) => {
     await deleteDoc(doc(db, 'products', id));
   };
@@ -12,6 +30,7 @@ export default function AdminPanel({ products }) {
   const [image, setImage] = useState(null);
   const [msg, setMsg] = useState('');
   const [available, setAvailable] = useState(true);
+  const [category, setCategory] = useState('');
 
   // States for editing
   const [editId, setEditId] = useState(null);
@@ -65,12 +84,14 @@ export default function AdminPanel({ products }) {
       name,
       price: parseFloat(price),
       image: image || '',
-      available
+      available,
+      category
     });
     setName('');
     setPrice('');
     setImage(null);
     setAvailable(true);
+    setCategory('');
     setMsg('تمت إضافة المنتج بنجاح!');
     setTimeout(() => setMsg(''), 1500);
   };
@@ -78,6 +99,23 @@ export default function AdminPanel({ products }) {
   return (
     <div>
       <h2>لوحة التحكم - إضافة منتج</h2>
+      {/* إدارة الأقسام */}
+      <div style={{marginBottom:'26px',background:'#f9fafb',padding:'14px',borderRadius:'12px',boxShadow:'0 1px 4px #eee'}}>
+        <h3 style={{margin:'0 0 8px 0'}}>إدارة الأقسام</h3>
+        <form style={{display:'flex',gap:'8px',marginBottom:'10px'}} onSubmit={handleAddCategory}>
+          <input type="text" placeholder="اسم القسم الجديد" value={newCategory} onChange={e => setNewCategory(e.target.value)} />
+          <button type="submit">إضافة قسم</button>
+        </form>
+        <ul style={{listStyle:'none',padding:'0',margin:'0',display:'flex',gap:'10px',flexWrap:'wrap'}}>
+          {categories.map(cat => (
+            <li key={cat.id} style={{background:'#fff',padding:'6px 12px',borderRadius:'8px',boxShadow:'0 1px 3px #eee',display:'flex',alignItems:'center',gap:'4px'}}>
+              <span>{cat.name}</span>
+              <button type="button" style={{background:'#ef4444',color:'#fff',border:'none',borderRadius:'5px',padding:'2px 7px',marginRight:'4px',cursor:'pointer'}} onClick={() => handleDeleteCategory(cat.id)}>حذف</button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <form className="admin-form" onSubmit={handleAdd}>
         <input
           type="text"
@@ -85,6 +123,12 @@ export default function AdminPanel({ products }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+        <select value={category} onChange={e => setCategory(e.target.value)} required style={{margin:'8px 0',padding:'8px',borderRadius:'6px'}}>
+          <option value="">اختر القسم</option>
+          {categories.map(cat => (
+            <option key={cat.id} value={cat.name}>{cat.name}</option>
+          ))}
+        </select>
         <label style={{display:'flex',alignItems:'center',gap:'6px',margin:'8px 0'}}>
           <input
             type="checkbox"

@@ -44,20 +44,30 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // الآن يمكن تصفية المنتجات بأمان
-  let filteredProducts = [];
-  try {
-    filteredProducts = products.filter(p => {
-      const search = searchTerm.toLowerCase();
-      return (
-        p.name.toLowerCase().includes(search) ||
-        (p.price && p.price.toString().includes(search)) ||
-        (p.description && p.description.toLowerCase().includes(search))
-      );
-    });
-  } catch (e) {
-    console.error('خطأ أثناء تصفية المنتجات:', e, products);
-    filteredProducts = [];
-  }
+  const [categories, setCategories] = useState([]);
+const [selectedCategory, setSelectedCategory] = useState('');
+useEffect(() => {
+  const unsubscribe = onSnapshot(collection(db, 'categories'), (snapshot) => {
+    setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  });
+  return () => unsubscribe();
+}, []);
+let filteredProducts = [];
+try {
+  filteredProducts = products.filter(p => {
+    const search = searchTerm.toLowerCase();
+    const matchesSearch = (
+      p.name.toLowerCase().includes(search) ||
+      (p.price && p.price.toString().includes(search)) ||
+      (p.description && p.description.toLowerCase().includes(search))
+    );
+    const matchesCategory = !selectedCategory || p.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+} catch (e) {
+  console.error('خطأ أثناء تصفية المنتجات:', e, products);
+  filteredProducts = [];
+}
 
   // جلب المنتجات من Firestore بشكل لحظي (الكود المقترح)
   useEffect(() => {
@@ -442,6 +452,13 @@ export default function App() {
                   boxShadow: '0 1px 3px #eee'
                 }}
               >مسح</button>
+            </div>
+            {/* تصفية الأقسام */}
+            <div style={{display:'flex',gap:'12px',marginBottom:'18px',flexWrap:'wrap'}}>
+              <button onClick={() => setSelectedCategory('')} style={{padding:'8px 16px',borderRadius:'8px',border:'none',background:!selectedCategory?'#0ea5e9':'#e0e7ef',color:!selectedCategory?'#fff':'#0ea5e9',fontWeight:'bold',cursor:'pointer'}}>كل الأقسام</button>
+              {categories.map(cat => (
+                <button key={cat.id} onClick={() => setSelectedCategory(cat.name)} style={{padding:'8px 16px',borderRadius:'8px',border:'none',background:selectedCategory===cat.name?'#0ea5e9':'#e0e7ef',color:selectedCategory===cat.name?'#fff':'#0ea5e9',fontWeight:'bold',cursor:'pointer'}}>{cat.name}</button>
+              ))}
             </div>
             {filteredProducts.length === 0 ? (
               <div style={{textAlign:'center',margin:'30px 0',color:'#888',fontSize:'1.2em',background:'#fff',padding:'18px',borderRadius:'12px',boxShadow:'0 1px 4px #eee'}}>
