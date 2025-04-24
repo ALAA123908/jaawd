@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import CategoryFilter from './components/CategoryFilter';
-import ProductList from './components/ProductList';
-import Loader from './components/Loader';
-import Toast from './components/Toast';
-import Header from './components/Header';
 import AdminPanel from './AdminPanel';
 import ErrorBoundary from './ErrorBoundary';
+import Toast from './components/Toast';
 import { db } from './firebase';
 import {
   collection, onSnapshot, addDoc, updateDoc, doc, setDoc, deleteDoc
@@ -51,16 +47,9 @@ export default function App() {
   // الآن يمكن تصفية المنتجات بأمان
   const [categories, setCategories] = useState([]);
 const [selectedCategory, setSelectedCategory] = useState('');
-const [loading, setLoading] = useState(true);
-const [toast, setToast] = useState({ type: 'success', message: '' });
 useEffect(() => {
-  setLoading(true);
   const unsubscribe = onSnapshot(collection(db, 'categories'), (snapshot) => {
     setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    setLoading(false);
-  }, (error) => {
-    setToast({ type: 'error', message: 'خطأ في تحميل الأقسام' });
-    setLoading(false);
   });
   return () => unsubscribe();
 }, []);
@@ -106,20 +95,23 @@ try {
 
   // جلب الطلبات من Firestore بشكل لحظي
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
-      const orderList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setOrders(orderList);
-      // إشعار للزبون عند وصول رد جديد
-      const userOrders = orderList.filter(o => o.adminReply && !o._toastShown);
-      if (userOrders.length > 0) {
-        // أظهر أول رد جديد فقط (يمكنك تعديلها لتظهر الكل)
-        setToastMsg(userOrders[0].adminReply);
+    const unsub = onSnapshot(collection(db, 'orders'), (snapshot) => {
+      const ordersArr = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setOrders(ordersArr);
+      // تحقق إذا هناك رد جديد للأدمن على أي طلب
+      const repliedOrder = ordersArr.find(order => order.adminReply && !order.replySeen);
+      if (repliedOrder) {
+        setToastMsg(repliedOrder.adminReply);
         setToastVisible(true);
-        setTimeout(() => setToastVisible(false), 3500);
-        // ضع علامة أن الرد تم إظهاره (اختياري، يحتاج تحديث في قاعدة البيانات)
+        // ضع علامة أن الرسالة شوهدت (اختياري)
+        setTimeout(async () => {
+          try {
+            await updateDoc(doc(db, 'orders', repliedOrder.id), { replySeen: true });
+          } catch {}
+        }, 500);
       }
     });
-    return () => unsubscribe();
+    return () => unsub();
   }, []);
 
   // إدارة الردود على الطلبات
@@ -178,38 +170,55 @@ try {
   const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
   return (
-    <div className="app-container">
-      <Header cartCount={cart.reduce((sum, item) => sum + item.qty, 0)} onCartClick={() => { setShowCart(true); setShowAdmin(false); }} onAdminClick={() => { setShowAdmin(true); setShowCart(false); }} />
-      <Toast type={toast.type} message={toast.message} onClose={() => setToast({ ...toast, message: '' })} />
-
-      {!showCart && !showAdmin && (
-  <main className="main-content" style={{maxWidth:900,margin:'0 auto',padding:'0 12px'}}>
-    <h1 style={{margin:'18px 0 18px',fontSize:'2em',color:'#0ea5e9',fontWeight:'bold',textAlign:'center',letterSpacing:'1px'}}>جميع المنتجات</h1>
-    <div className="search-bar">
-      <input
-        type="text"
-        placeholder="ابحث عن منتج..."
-        value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
-        style={{padding:'10px',borderRadius:'8px',border:'1px solid #e0e7ef',width:'70%',maxWidth:'350px',fontSize:'1.05em'}}
-      />
-      <button
-        onClick={() => setSearchTerm('')}
-        style={{padding:'10px 16px',borderRadius:'8px',border:'none',background:'#ef4444',color:'#fff',fontWeight:'bold',cursor:'pointer',fontSize:'1rem',boxShadow:'0 1px 3px #eee',marginRight:'10px'}}
-      >مسح</button>
-    </div>
-    <CategoryFilter categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
-    {loading ? (
-      <Loader text="جاري تحميل البيانات..." />
-    ) : (
-      <ProductList products={filteredProducts} addToCart={addToCart} />
-    )}
-  </main>
-)}
-
+    <>
+      <Toast message={toastMsg} visible={toastVisible} onClose={() => setToastVisible(false)} duration={3500} />
+      <div className="app-container">
+        {/* إشعار عائم أعلى الصفحة */}
+      {toastVisible && toastMsg && (
+        <div style={{
+          position: 'fixed',
+          top: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#0ea5eedd',
+          color: '#fff',
+          padding: '14px 28px',
+          borderRadius: '14px',
+          fontSize: '1.18em',
+          fontWeight: 600,
+          boxShadow: '0 6px 24px #0003',
+          zIndex: 9999,
+          transition: 'opacity 0.4s',
+          opacity: toastVisible ? 1 : 0
+        }}>
+          {toastMsg}
+        </div>
+      )}
+      <header className="header">
+        <h1>مرحبًا بك في jawad shop</h1>
+        <div className="header-nav">
+          <button
+            className={"cart-btn" + (!showCart && !showAdmin ? " active" : "")}
+            onClick={() => { setShowCart(false); setShowAdmin(false); }}
+          >
+            🏠 المنتجات
+          </button>
+          <button
+            className={"cart-btn" + (showCart ? " active" : "")}
+            onClick={() => { setShowCart(true); setShowAdmin(false); }}
+          >
+            🛒 السلة ({cart.length})
+          </button>
+          <button
+            className={"cart-btn" + (showAdmin ? " active" : "")}
+            onClick={() => { setShowAdmin(true); setShowCart(false); }}
+          >
+            ⚙️ لوحة التحكم
+          </button>
+        </div>
+      </header>
       {showAdmin && panelPassword && !panelAuth ? (
-  <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'70vh'}}>
-    <button className="back-btn" onClick={() => { setShowAdmin(false); setShowCart(false); }} style={{position:'absolute',top:'24px',left:'24px',background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'9px 24px',fontWeight:'bold',cursor:'pointer',zIndex:1001}}>← العودة للصفحة الرئيسية</button>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'70vh'}}>
           <form onSubmit={e => {
             e.preventDefault();
             if (panelPasswordInput === panelPassword) {
@@ -226,8 +235,7 @@ try {
           </form>
         </div>
       ) : showAdmin ? (
-  <main>
-    <button className="back-btn" onClick={() => { setShowAdmin(false); setShowCart(false); }} style={{margin:'16px 0',background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'9px 24px',fontWeight:'bold',cursor:'pointer'}}>← العودة للصفحة الرئيسية</button>
+         <main>
           <div style={{marginBottom:'18px', display:'flex', gap:'10px'}}>
             <button className={"cart-btn" + (adminSection==='products' ? ' active' : '')} onClick={() => {
               if (sectionPasswords['products'] && !sectionAuth['products']) {
@@ -452,85 +460,95 @@ try {
               >مسح</button>
             </div>
             {/* تصفية الأقسام */}
-            <CategoryFilter categories={categories} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
-            {/* قائمة المنتجات */}
-            <ProductList products={filteredProducts} addToCart={addToCart} />
+            <div style={{display:'flex',gap:'12px',marginBottom:'18px',flexWrap:'wrap'}}>
+              <button onClick={() => setSelectedCategory('')} style={{padding:'8px 16px',borderRadius:'8px',border:'none',background:!selectedCategory?'#0ea5e9':'#e0e7ef',color:!selectedCategory?'#fff':'#0ea5e9',fontWeight:'bold',cursor:'pointer'}}>كل الأقسام</button>
+              {categories.map(cat => (
+                <button key={cat.id} onClick={() => setSelectedCategory(cat.name)} style={{padding:'8px 16px',borderRadius:'8px',border:'none',background:selectedCategory===cat.name?'#0ea5e9':'#e0e7ef',color:selectedCategory===cat.name?'#fff':'#0ea5e9',fontWeight:'bold',cursor:'pointer'}}>{cat.name}</button>
+              ))}
+            </div>
+            {filteredProducts.length === 0 ? (
+              <div style={{textAlign:'center',margin:'30px 0',color:'#888',fontSize:'1.2em',background:'#fff',padding:'18px',borderRadius:'12px',boxShadow:'0 1px 4px #eee'}}>
+                لم يتم العثور على منتجات مطابقة لبحثك.
+              </div>
+            ) : (
+              <div className="products-list">
+                {filteredProducts.map(product => (
+                  <div className="product-card" key={product.id}>
+                    <div className="product-thumb">
+                      {product.image ? (
+                        <img src={product.image} alt={product.name} className="product-img" />
+                      ) : (
+                        <span role="img" aria-label="product">🛍️</span>
+                      )}
+                    </div>
+                    <div className="product-title">{product.name}</div>
+                    <div className="product-price">{product.price} $</div>
+                    {product.available !== false ? (
+                      <button className="add-btn" onClick={() => addToCart(product)}>
+                        إضافة للسلة
+                      </button>
+                    ) : (
+                      <button className="add-btn" disabled style={{background:'#aaa',cursor:'not-allowed'}}>
+                        غير متوفر
+                      </button>
+                    )}
+                    <div style={{marginTop:'4px',fontSize:'0.95em',color:product.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
+                      {product.available !== false ? 'متوفر' : 'غير متوفر'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
       ) : (
         <main>
-          <Header cartCount={cart.reduce((sum, item) => sum + item.qty, 0)} onCartClick={() => setShowCart(true)} onAdminClick={() => setShowAdmin(true)} />
-          {showCart && (
-            <div className="main-content cart-content">
-              <button className="back-btn" onClick={() => setShowCart(false)} style={{margin:'16px 0',background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'9px 24px',fontWeight:'bold',cursor:'pointer'}}>← العودة للمنتجات</button>
-              <div style={{maxWidth:900,margin:'0 auto',padding:'0 12px'}}>
-                <h2>سلة التسوق</h2>
-                {cart.length === 0 ? (
-                  <p>السلة فارغة.</p>
-                ) : (
-                  <React.Fragment>
-                    <div className="cart-cards">
-                      {cart.map((item) => (
-                        <div className="cart-card" key={item.id}>
-                          <div className="cart-thumb">
-                            {item.image ? (
-                              <img src={item.image} alt={item.name} className="cart-img" />
-                            ) : (
-                              <span role="img" aria-label="product">🛍️</span>
-                            )}
-                          </div>
-                          <div className="cart-details">
-                            <div className="cart-title">{item.name}</div>
-                            <div style={{fontSize:'0.95em',color:item.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
-                              {item.available !== false ? 'متوفر' : 'غير متوفر'}
-                            </div>
-                            <div className="cart-price">{item.price} $ / للواحدة</div>
-                            <div className="cart-qty-controls">
-                              <button onClick={() => decreaseQty(item.id)}>-</button>
-                              <span>{item.qty}</span>
-                              <button onClick={() => addToCart(item)}>+</button>
-                            </div>
-                            <div className="cart-subtotal">المجموع: {item.price * item.qty} $</div>
-                          </div>
-                          <button className="cart-remove-btn" onClick={() => removeFromCart(item.id)}>حذف</button>
-                  {cart.map((item) => (
-                    <div className="cart-card" key={item.id}>
-                      <div className="cart-thumb">
-                        {item.image ? (
-                          <img src={item.image} alt={item.name} className="cart-img" />
-                        ) : (
-                          <span role="img" aria-label="product">🛍️</span>
-                        )}
-                      </div>
-                      <div className="cart-details">
-                        <div className="cart-title">{item.name}</div>
-                        <div style={{fontSize:'0.95em',color:item.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
-                          {item.available !== false ? 'متوفر' : 'غير متوفر'}
-                        </div>
-                        <div className="cart-price">{item.price} $ / للواحدة</div>
-                        <div className="cart-qty-controls">
-                          <button onClick={() => decreaseQty(item.id)}>-</button>
-                          <span>{item.qty}</span>
-                          <button onClick={() => addToCart(item)}>+</button>
-                        </div>
-                        <div className="cart-subtotal">المجموع: {item.price * item.qty} $</div>
-                      </div>
-                      <button className="cart-remove-btn" onClick={() => removeFromCart(item.id)}>حذف</button>
+          <h2>سلة التسوق</h2>
+          {cart.length === 0 ? (
+            <p>السلة فارغة.</p>
+          ) : (
+            <>
+              <div className="cart-cards">
+                {cart.map((item) => (
+                  <div className="cart-card" key={item.id}>
+                    <div className="cart-thumb">
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="cart-img" />
+                      ) : (
+                        <span role="img" aria-label="product">🛍️</span>
+                      )}
                     </div>
-                  ))}
-                </div>
-                <div className="total">الإجمالي: {total} $</div>
-                <button className="cart-clear-btn" onClick={clearCart}>إفراغ السلة</button>
-                <button className="order-btn" onClick={() => setShowOrderForm(true)}>إتمام الطلب</button>
-                {/* إشعار رد الإدارة على الطلب الأخير للزبون */}
-                {orders.length > 0 && orders.filter(o => o.phone === orderPhone || o.name === orderName).slice(-1)[0]?.adminReply && (
-                  <div className="order-msg" style={{background:'#f0fdf4',color:'#15803d',border:'1.5px solid #bbf7d0',marginTop:'22px'}}>
-                    <b>رد الإدارة:</b> {orders.filter(o => o.phone === orderPhone || o.name === orderName).slice(-1)[0].adminReply}
+                    <div className="cart-details">
+                      <div className="cart-title">{item.name}</div>
+                      <div style={{fontSize:'0.95em',color:item.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
+                        {item.available !== false ? 'متوفر' : 'غير متوفر'}
+                      </div>
+                      <div className="cart-price">{item.price} $ / للواحدة</div>
+                      <div className="cart-qty-controls">
+                        <button onClick={() => decreaseQty(item.id)}>-</button>
+                        <span>{item.qty}</span>
+                        <button onClick={() => addToCart(item)}>+</button>
+                      </div>
+                      <div className="cart-subtotal">المجموع: {item.price * item.qty} $</div>
+                    </div>
+                    <button className="cart-remove-btn" onClick={() => removeFromCart(item.id)}>حذف</button>
                   </div>
-                )}
-              </React.Fragment>
-            )}
+                ))}
+              </div>
+              <div className="total">الإجمالي: {total} $</div>
+              <button className="cart-clear-btn" onClick={clearCart}>إفراغ السلة</button>
+              <button className="order-btn" onClick={() => setShowOrderForm(true)}>إتمام الطلب</button>
+              {/* إشعار رد الإدارة على الطلب الأخير للزبون */}
+              {orders.length > 0 && orders.filter(o => o.phone === orderPhone || o.name === orderName).slice(-1)[0]?.adminReply && (
+                <div className="order-msg" style={{background:'#f0fdf4',color:'#15803d',border:'1.5px solid #bbf7d0',marginTop:'22px'}}>
+                  <b>رد الإدارة:</b> {orders.filter(o => o.phone === orderPhone || o.name === orderName).slice(-1)[0].adminReply}
+                </div>
+              )}
+            </>
+          )}
+
           {showOrderForm && (
-  <div className="order-form-modal">
-    <button className="back-btn" onClick={() => { setShowOrderForm(false); setShowCart(false); setShowAdmin(false); }} style={{margin:'16px 0',background:'#0ea5e9',color:'#fff',border:'none',borderRadius:'8px',padding:'9px 24px',fontWeight:'bold',cursor:'pointer'}}>← العودة للصفحة الرئيسية</button>
+            <div className="order-form-modal">
               <form className="order-form" onSubmit={async (e) => {
                 e.preventDefault();
                 setOrderMsg('تم استلام طلبك بنجاح! سيتم التواصل معك قريبًا.');
@@ -566,10 +584,10 @@ try {
           <button className="back-btn" onClick={() => setShowCart(false)}>
             ← العودة للمنتجات
           </button>
-        </div> {/* إغلاق div.main-content الخاص بسلة التسوق */}
         </main>
       )}
       <footer className="footer">جميع الحقوق محفوظة © jawad shop 2025</footer>
     </div>
+  </>
   );
 }
