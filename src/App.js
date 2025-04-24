@@ -58,15 +58,15 @@ try {
   filteredProducts = products.filter(p => {
     const search = searchTerm.toLowerCase();
     const matchesSearch = (
-      p.name.toLowerCase().includes(search) ||
+      (p.name && typeof p.name === 'string' && p.name.toLowerCase().includes(search)) ||
       (p.price && p.price.toString().includes(search)) ||
-      (p.description && p.description.toLowerCase().includes(search))
+      (p.description && typeof p.description === 'string' && p.description.toLowerCase().includes(search))
     );
     const matchesCategory = !selectedCategory || p.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 } catch (e) {
-  console.error('خطأ أثناء تصفية المنتجات:', e, products);
+  console.error('خطأ أثناء تصفية المنتجات! تحقق من الحقول الناقصة أو القيم غير المتوقعة:', e, products);
   filteredProducts = [];
 }
 
