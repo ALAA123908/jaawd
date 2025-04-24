@@ -173,7 +173,7 @@ try {
 
   return (
     <>
-      <Toast message={toastMsg} visible={toastVisible} onClose={() => setToastVisible(false)} duration={3500} />
+      <Toast message={typeof toastMsg === 'string' ? toastMsg : (toastMsg ? JSON.stringify(toastMsg) : '')} visible={toastVisible} onClose={() => setToastVisible(false)} duration={3500} />
       <div className="app-container">
         {/* إشعار عائم أعلى الصفحة */}
       {toastVisible && toastMsg && (
@@ -193,7 +193,7 @@ try {
           transition: 'opacity 0.4s',
           opacity: toastVisible ? 1 : 0
         }}>
-          {toastMsg}
+          {typeof toastMsg === 'string' ? toastMsg : (toastMsg ? JSON.stringify(toastMsg) : '')}
         </div>
       )}
       <header className="header">
@@ -366,15 +366,15 @@ try {
                 <ul className="orders-list">
                   {orders.map(order => (
                     <li key={order.id} className="order-card">
-                      <div><b>الاسم:</b> {order.name}</div>
-                      <div><b>العنوان:</b> {order.address}</div>
-                      <div><b>رقم الجوال:</b> {order.phone}</div>
-                      <div><b>الإجمالي:</b> {order.total} $</div>
-                      <div><b>تاريخ الطلب:</b> {order.date}</div>
+                      <div><b>الاسم:</b> {typeof order.name === 'string' ? order.name : order.name ? JSON.stringify(order.name) : ''}</div>
+                      <div><b>العنوان:</b> {typeof order.address === 'string' ? order.address : order.address ? JSON.stringify(order.address) : ''}</div>
+                      <div><b>رقم الجوال:</b> {typeof order.phone === 'string' ? order.phone : order.phone ? JSON.stringify(order.phone) : ''}</div>
+                      <div><b>الإجمالي:</b> {typeof order.total === 'string' || typeof order.total === 'number' ? order.total : order.total ? JSON.stringify(order.total) : ''} $</div>
+                      <div><b>تاريخ الطلب:</b> {typeof order.date === 'string' ? order.date : order.date ? JSON.stringify(order.date) : ''}</div>
                       <div><b>المنتجات:</b>
                         <ul>
-                          {order.items && order.items.map((item, idx) => (
-                            <li key={idx}>{item.name} × {item.qty} ({item.price} ر.س)</li>
+                          {Array.isArray(order.items) && order.items.map((item, idx) => (
+                            <li key={idx}>{typeof item.name === 'string' ? item.name : item.name ? JSON.stringify(item.name) : ''} × {typeof item.qty === 'number' ? item.qty : item.qty ? JSON.stringify(item.qty) : ''} ({typeof item.price === 'number' ? item.price : item.price ? JSON.stringify(item.price) : ''} ر.س)</li>
                           ))}
                         </ul>
                       </div>
@@ -588,7 +588,7 @@ try {
               </form>
             </div>
           )}
-          {orderMsg && <div className="order-msg">{orderMsg}</div>}
+          {typeof orderMsg === 'string' && orderMsg && <div className="order-msg">{orderMsg}</div>}
 
           <button className="back-btn" onClick={() => setShowCart(false)}>
             ← العودة للمنتجات
