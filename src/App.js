@@ -56,10 +56,12 @@ useEffect(() => {
 let filteredProducts = [];
 try {
   filteredProducts = products.filter(p => {
+    // تجاهل المنتج إذا لم يكن له اسم نصي
+    if (!p.name || typeof p.name !== 'string') return false;
     const search = searchTerm.toLowerCase();
     const matchesSearch = (
-      (p.name && typeof p.name === 'string' && p.name.toLowerCase().includes(search)) ||
-      (p.price && p.price.toString().includes(search)) ||
+      p.name.toLowerCase().includes(search) ||
+      (typeof p.price !== 'undefined' && p.price !== null && p.price.toString().includes(search)) ||
       (p.description && typeof p.description === 'string' && p.description.toLowerCase().includes(search))
     );
     const matchesCategory = !selectedCategory || p.category === selectedCategory;
