@@ -460,10 +460,17 @@ try {
               >مسح</button>
             </div>
             {/* تصفية الأقسام */}
-            <div style={{display:'flex',gap:'12px',marginBottom:'18px',flexWrap:'wrap'}}>
-              <button onClick={() => setSelectedCategory('')} style={{padding:'8px 16px',borderRadius:'8px',border:'none',background:!selectedCategory?'#0ea5e9':'#e0e7ef',color:!selectedCategory?'#fff':'#0ea5e9',fontWeight:'bold',cursor:'pointer'}}>كل الأقسام</button>
+            <div className="category-nav">
+              <button
+                onClick={() => setSelectedCategory('')}
+                className={selectedCategory === '' ? 'cat-btn active' : 'cat-btn'}
+              >كل الأقسام</button>
               {categories.map(cat => (
-                <button key={cat.id} onClick={() => setSelectedCategory(cat.name)} style={{padding:'8px 16px',borderRadius:'8px',border:'none',background:selectedCategory===cat.name?'#0ea5e9':'#e0e7ef',color:selectedCategory===cat.name?'#fff':'#0ea5e9',fontWeight:'bold',cursor:'pointer'}}>{cat.name}</button>
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.name)}
+                  className={selectedCategory === cat.name ? 'cat-btn active' : 'cat-btn'}
+                >{cat.name}</button>
               ))}
             </div>
             {filteredProducts.length === 0 ? (
