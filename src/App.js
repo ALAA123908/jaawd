@@ -484,14 +484,13 @@ try {
                 {filteredProducts.map(product => (
                   <div className="product-card" key={product.id}>
                     <div className="product-thumb">
-                      {product.image ? (
-                        <img src={product.image} alt={product.name} className="product-img" />
-                      ) : (
-                        <span role="img" aria-label="product">🛍️</span>
+                      {product.image && (
+                        <img src={typeof product.image === 'string' ? product.image : product.image ? JSON.stringify(product.image) : ''} alt={typeof product.name === 'string' ? product.name : product.name ? JSON.stringify(product.name) : ''} className="product-img" />
                       )}
                     </div>
-                    <div className="product-title">{product.name}</div>
-                    <div className="product-price">{product.price} $</div>
+                    <div className="product-title">{typeof product.name === 'string' ? product.name : product.name ? JSON.stringify(product.name) : ''}</div>
+                    <div className="product-description">{typeof product.description === 'string' ? product.description : product.description ? JSON.stringify(product.description) : ''}</div>
+                    <div className="product-price">{typeof product.price === 'number' ? product.price : product.price ? JSON.stringify(product.price) : ''} $</div>
                     {product.available !== false ? (
                       <button className="add-btn" onClick={() => addToCart(product)}>
                         إضافة للسلة
@@ -528,17 +527,17 @@ try {
                       )}
                     </div>
                     <div className="cart-details">
-                      <div className="cart-title">{item.name}</div>
+                      <div className="cart-title">{typeof item.name === 'string' ? item.name : item.name ? JSON.stringify(item.name) : ''}</div>
                       <div style={{fontSize:'0.95em',color:item.available !== false ? '#16a34a':'#ef4444',fontWeight:'bold'}}>
                         {item.available !== false ? 'متوفر' : 'غير متوفر'}
                       </div>
-                      <div className="cart-price">{item.price} $ / للواحدة</div>
+                      <div className="cart-price">{typeof item.price === 'number' ? item.price : item.price ? JSON.stringify(item.price) : ''} $ / للواحدة</div>
                       <div className="cart-qty-controls">
                         <button onClick={() => decreaseQty(item.id)}>-</button>
-                        <span>{item.qty}</span>
+                        <span>{typeof item.qty === 'number' ? item.qty : item.qty ? JSON.stringify(item.qty) : ''}</span>
                         <button onClick={() => addToCart(item)}>+</button>
                       </div>
-                      <div className="cart-subtotal">المجموع: {item.price * item.qty} $</div>
+                      <div className="cart-subtotal">المجموع: {(typeof item.price === 'number' && typeof item.qty === 'number') ? (item.price * item.qty) : ''} $</div>
                     </div>
                     <button className="cart-remove-btn" onClick={() => removeFromCart(item.id)}>حذف</button>
                   </div>
