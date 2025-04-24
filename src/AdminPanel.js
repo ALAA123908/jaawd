@@ -109,8 +109,8 @@ export default function AdminPanel({ products }) {
         <ul style={{listStyle:'none',padding:'0',margin:'0',display:'flex',gap:'10px',flexWrap:'wrap'}}>
           {categories.map(cat => (
             <li key={cat.id} style={{background:'#fff',padding:'6px 12px',borderRadius:'8px',boxShadow:'0 1px 3px #eee',display:'flex',alignItems:'center',gap:'4px'}}>
-              <span>{cat.name}</span>
-              <button type="button" style={{background:'#ef4444',color:'#fff',border:'none',borderRadius:'5px',padding:'2px 7px',marginRight:'4px',cursor:'pointer'}} onClick={() => handleDeleteCategory(cat.id)}>حذف</button>
+              <span>{typeof cat.name === 'string' ? cat.name : cat.name ? JSON.stringify(cat.name) : ''}</span>
+              <button onClick={() => handleDeleteCategory(cat.id)} style={{background:'#ef4444',color:'#fff',border:'none',borderRadius:'6px',padding:'4px 10px',marginRight:'6px',cursor:'pointer'}}>حذف</button>
             </li>
           ))}
         </ul>
@@ -192,7 +192,7 @@ export default function AdminPanel({ products }) {
       <ul className="admin-products-list">
         {products.map((p) => (
           <li key={p.id} style={{display:'flex',alignItems:'center',gap:'10px'}}>
-            {p.image && <img src={p.image} alt={p.name} style={{width:'38px',height:'38px',objectFit:'cover',borderRadius:'8px',border:'1px solid #ddd'}} />}
+            {p.image && <img src={typeof p.image === 'string' ? p.image : p.image ? JSON.stringify(p.image) : ''} alt={typeof p.name === 'string' ? p.name : p.name ? JSON.stringify(p.name) : ''} style={{width:'38px',height:'38px',objectFit:'cover',borderRadius:'8px',border:'1px solid #ddd'}} />}
             {editId === p.id ? (
               <form className="admin-form" onSubmit={(e) => handleEditSave(e, p.id)} style={{marginBottom:'0'}}>
                 <input
@@ -262,7 +262,7 @@ export default function AdminPanel({ products }) {
               </form>
             ) : (
               <>
-                {p.name} - {p.price} ريال
+                {typeof p.name === 'string' ? p.name : p.name ? JSON.stringify(p.name) : ''} - {typeof p.price === 'number' ? p.price : p.price ? JSON.stringify(p.price) : ''} ريال
                 <button style={{marginRight:'10px'}} onClick={() => startEdit(p)}>تعديل</button>
                 <button style={{background:'#ef4444',color:'#fff',border:'none',borderRadius:'6px',padding:'6px 12px',marginRight:'6px',cursor:'pointer'}} onClick={() => handleDelete(p.id)}>حذف</button>
               </>
